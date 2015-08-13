@@ -22,6 +22,7 @@ module PuppetX
         unless res_hash = options[:resource_hash]
           catalog  = options[:catalog]
           res_ref  = options[:resource_ref].to_s
+          #TODO:  Can we change name to be catalog.resource(res_ref)[:name]?  Not sure of the long term effects of this, but I can't see anything awful happening.
           name     = Puppet::Resource.new(nil, res_ref).title
           res      = catalog.resource(res_ref)
           res_hash = res.to_hash
@@ -32,7 +33,12 @@ module PuppetX
 
         provider = options[:provider]
 
-        unless transport = find(name, provider)
+        # name sometimes might not be the actual name the transport is initialized with.
+        # For example, using Transport[vcenter] for the transport metaparameter could result in a transport object its hostname, like 'vcenter-localhost'
+        # name variable above will be == 'vcenter' in this case, so unless we use find method with res_hash[:name], we will initiate a new connection on every resource thinking it doesn't exist
+        transport = find(name, provider) || find(res_hash[:name], provider)
+
+        unless transport
           transport = PuppetX::Puppetlabs::Transport::const_get(provider.to_s.capitalize).new(res_hash)
           transport.connect
           @@instances << transport

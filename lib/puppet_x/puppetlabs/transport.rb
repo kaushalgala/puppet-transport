@@ -3,7 +3,7 @@
 # We need this to cleanup ssh/vcenter/vshield connections regardless of resource apply result.
 module Puppet
   class Transaction
-    alias_method :evaluate_original, :evaluate
+    alias_method :evaluate_original, :evaluate unless method_defined?(:evaluate_original)
 
     def evaluate
       evaluate_original

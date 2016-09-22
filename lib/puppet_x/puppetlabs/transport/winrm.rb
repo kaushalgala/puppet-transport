@@ -8,8 +8,8 @@ module PuppetX::Puppetlabs::Transport
       options = opts[:options] || {}
       @options = options.inject({}){|h, (k, v)| h[k.to_sym] = v; h}
 
-      port = @options.fetch(:port, 5985)
-      @connection = @options.fetch(:connection, :plaintext)
+      port = @options.fetch(:port, 5986)
+      @connection = @options.fetch(:connection, :ssl)
       @timeout    = @options.fetch(:timeout, 60)
       case @connection
       when :plaintext
@@ -22,6 +22,7 @@ module PuppetX::Puppetlabs::Transport
         @options[:user] = opts[:username]
         @options[:pass] = opts[:password]
         @options[:disable_sspi] ||= true unless @options[:basic_auth_only]
+        @options[:no_ssl_peer_verification] = true
       when :kerberos
         @endpoint = "https://#{opts[:server]}:#{port}/wsman"
       end
@@ -36,12 +37,11 @@ module PuppetX::Puppetlabs::Transport
         @connection,
         @options
       )
-      @winrm.set_timeout(@timeout)
     end
 
     def powershell(cmd)
       Puppet.debug("Executing on #{@host}:\n#{cmd.gsub(@options[:pass], '*' * @options[:pass].size)}")
-      @winrm.powershell(cmd)
+      @winrm.create_executor.run_powershell_script(cmd)
     end
   end
 end
